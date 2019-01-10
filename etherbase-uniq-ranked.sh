@@ -23,35 +23,45 @@ rank_uniq_etherbases(){
 	rm "$f"
 }
 
-echo "last blocks: $wcl, uniq etherbases: $wcl_uniq"
-aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
-echo "$aggregate"
+send_alert_email(){
+	# TODO: set me up
+	# echo "$1" | mail -s '[etc.alert][etherbase rank]' isaac.ardis@gmail.com # et al, hopefully
+	echo "$1" > /dev/null
+}
 
-echo "last blocks: 100, uniq etherbases: $(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)"
+aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
 latest=$(tail -n100 "$F_blockchain_write_block" | rank_uniq_etherbases 100)
 
-while read percent address; do
-	line_at_agg=$(grep "$address" <<< "$aggregate")
-
-	addr_at_agg_percent=$(echo $line_at_agg | cut -d' ' -f1)
-
-	# strip left-padded 0's
-	addr_at_agg_percent=${addr_at_agg_percent##0} 
-	percent=${percent##0}
-
-	diff=$((percent - addr_at_agg_percent))
-
-	l="$percent $address"
-
-	if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
-		# alert, dropping
-		l="$l [dropping] $diff"
-	elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
-		# alert, rising
-		l="$l [rising] +$diff"
+echo "last $wcl block (eb.uniq=$wcl_uniq)  |  last 100 (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)"
+while read agg_percent agg_address; do
+	l="$agg_percent $agg_address"
+	if ! grep -q "$agg_address" <<< "$latest"; then
+		# address has not mined a block in latest batch
+		echo "$l" > /dev/null # noop
 	else
-		l="$l [normal] $diff"
+		latest_line=$(grep "$agg_address" <<< "$latest")
+		percent=$(echo "$latest_line" | cut -d' ' -f1)
+		address=$(echo "$latest_line" | cut -d' ' -f2)
+
+		l="$l  |  $percent $address"
+
+		addr_at_agg_percent=${agg_percent##0}
+		addr_at_latest_percent=${percent##0}
+
+		diff=$((addr_at_latest_percent - addr_at_agg_percent))
+
+		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
+			l="$l [low] $diff"
+			send_alert_email "$l"
+
+		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
+			l="$l [high] +$diff"
+			send_alert_email "$l"
+
+		else
+			l="$l [normal] $diff"
+		fi
 	fi
 	echo "$l"
+done <<< "$aggregate"
 
-done <<< "$latest"
