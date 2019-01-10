@@ -32,7 +32,8 @@ send_alert_email(){
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
 latest=$(tail -n100 "$F_blockchain_write_block" | rank_uniq_etherbases 100)
 
-echo "last $wcl block (eb.uniq=$wcl_uniq)  |  last 100 (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)"
+echo "last $wcl blocks (eb.uniq=$wcl_uniq)                      last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)"
+echo
 while read agg_percent agg_address; do
 	l="$agg_percent $agg_address"
 	if ! grep -q "$agg_address" <<< "$latest"; then
@@ -43,7 +44,7 @@ while read agg_percent agg_address; do
 		percent=$(echo "$latest_line" | cut -d' ' -f1)
 		address=$(echo "$latest_line" | cut -d' ' -f2)
 
-		l="$l  |  $percent $address"
+		l="$l  |  $percent" # don't also echo address, redundant
 
 		addr_at_agg_percent=${agg_percent##0}
 		addr_at_latest_percent=${percent##0}
