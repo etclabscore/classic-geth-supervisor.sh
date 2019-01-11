@@ -2,11 +2,11 @@
 
 A rudimentary collection of bash scripts to collect and analyze blockchain client metrics, providing basic alerting mechanisms for anomalous events and situations.
 
-These are intended to exercise bash's ubiquity, providing lightweight and portable alternatives to heavy-duty chain and network diagnostic stacks like Elasticsearch's ELK stack. The focus is on their ability to trigger rudimentary alerting systems, like email, based on rule-of-thumb heuristics for anomalous or flagged chain behavior. Their design intends to minimize specialized dependencies and focus on providing simple and generic text-based datasets and analytics.
+These are intended to exercise bash's ubiquity, providing lightweight and portable alternatives to heavy-duty diagnostic stacks like Elasticsearch's ELK stack. The focus is on their ability to trigger rudimentary alerting systems, like email, based on rule-of-thumb heuristics for anomalous or flagged chain behavior. Their design intends to minimize specialized dependencies and focus on providing simple and generic text-based datasets and analytics.
 
 With these limitations in mind, it's clear these tools are best _adjacent_ to, or at least well-informed-by, the dynamic, investigative, and visual diagnostics available through something like an ELK stack system.
 
-Here's what it's the folder as-is (and I'm going to regret hardcoding a directory structure in the README...):
+Here's what's in the folders as-is (and I'm going to regret hardcoding a directory structure in the README...):
 
 ```sh
 
@@ -20,5 +20,18 @@ collect/
                        # extracting notable data points, and storing those points 
                        # by default in $HOME/.classic-geth-supervisor/
 0 directories, 2 files
+```
+
+The data directory generated will look something like this:
+
+```sh
+$ tree .classic-geth-supervisor/
+.classic-geth-supervisor/
+├── blockchain.reorg.blocks
+├── blockchain.reorg.blocks.tmp
+├── blockchain.write.block
+└── blockchain.write.block.tmp
+
+0 directories, 4 files
 ```
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Either pass a first arg as the path to a geth logfile containing only grep'd BLOCKCHAIN.WRITE.BLOCK lines, or use my default sandbox file which doesn't exist on your computer.
-F_blockchain_write_block="${1:-"$HOME/.mlog-monitor-data/blockchain.write.block"}"
+F_blockchain_write_block="${1:-"$HOME/.classic-geth-supervisor/blockchain.write.block"}"
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
 # In percent (absolute +/-).
