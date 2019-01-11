@@ -47,7 +47,16 @@ do_alert(){
    al=$1
    shift 1;
    msg="$@"
-   >&2 echo "> debug.alerting: lev=$al alert=$msg"
+   alertcode="yellow"
+   case $al in
+       2)
+           alertcode="orange"
+           ;;
+       3)
+           alertcode="red"
+           ;;
+   esac
+   >&2 echo "> debug.alerting: lev=$alertcode alert=$msg"
 	 # TODO: set me up
    # say "ruh roh, $1 $2"
 	 # echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
@@ -101,7 +110,7 @@ fn_share_analysis(){
 
  	if ! grep -q "$agg_address" <<< "$latest"; then
 		# address has not mined a block in latest batch
-		echo "$l" > /dev/null # noop
+		echo "" > /dev/null # noop
 	else
 		latest_line=$(grep "$agg_address" <<< "$latest")
 		percent=$(echo "$latest_line" | cut -d' ' -f1)
@@ -114,20 +123,20 @@ fn_share_analysis(){
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share decreased significantly lately: $agg_percent $agg_address $l"
+      a_msg+="* etherbase share decreased significantly lately: $agg_address"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share increased significantly lately: $agg_percent $agg_address $l"
+      a_msg+="* etherbase share increased significantly lately: $agg_address"
 		fi
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
 			  a_lev=$(fn_greater_of $a_lev 3)
-        a_msg+="* total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+        a_msg+="* total share exceeds $((50-M_margin_aggregate_diff))% $agg_address"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
 			  a_lev=$(fn_greater_of $a_lev 1)
-        a_msg+="* total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+        a_msg+="* total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_address"
     fi
     echo "$a_msg"
 	fi
@@ -188,12 +197,12 @@ fn_check_latest_etherbase_variation(){
     return $a_lev
 }
 
-output=""
 
-echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+echo "last $wcl blocks (eb.uniq=$wcl_uniq)                  #bks  | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
 echo
+output=""
 while read agg_percent agg_count agg_address _ uncles; do
-    l="$agg_percent $agg_count $agg_address"
+    l="$agg_address $agg_percent% $(printf '%04d' $agg_count)"
 
     latest_line=$(grep "$agg_address" <<< "$latest")
     percent=$(echo "$latest_line" | cut -d' ' -f1)
@@ -226,7 +235,9 @@ done <<< "$aggregate"
 
 
 if [[ $alert_lev -ne 0 ]]; then
-    do_alert $alert_lev "$alert_msg" "$output"
+    do_alert $alert_lev "$alert_msg" "
+---
+$output"
 else
     >&2 echo "> debug.alert_lev=$alert_lev"
 fi
