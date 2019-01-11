@@ -199,7 +199,7 @@ while read agg_percent agg_count agg_address _ uncles; do
     percent=$(echo "$latest_line" | cut -d' ' -f1)
     if [[ ${percent##0} -lt 1 ]]; then continue; fi
 
-    l+="$(fn_share_print $agg_percent $agg_address)"
+    l+=" $(fn_share_print $agg_percent $agg_address)"
 
     alert_msg+=$(fn_share_analysis $agg_percent $agg_address)
     alert_lev=$(fn_greater_of $? $alert_lev)
