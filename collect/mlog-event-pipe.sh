@@ -12,7 +12,7 @@ if [[ $1 == *-h || $1 == *help ]]; then
 fi
 
 
-D_mlog_monitor_data=${1:-"$HOME/.mlog-monitor-data"}
+D_mlog_monitor_data=${1:-"$HOME/.classic-geth-supervisor"}
 data_max_length=${2:-5000}
 
 mkdir -p "$D_mlog_monitor_data"
