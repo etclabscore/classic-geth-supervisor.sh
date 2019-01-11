@@ -14,7 +14,21 @@ wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
 alert_lev=0
 alert_msg=""
 
+# calc is a simple calculator that can handle floating points
 calc(){ awk "BEGIN { print "$*"*100 }"; }
+
+# this a vanity fn that adds a symbolic delta prefix to numbers
+prefix_delta(){
+	  if [[ $1 -eq 0 ]]; then
+		    echo ":$1"
+	  elif [[ $1 -gt 0 ]]; then
+		    echo "+$1"
+	  elif [[ $1 != -* ]]; then
+		    echo "-$1"
+	  else
+		    echo "$1"
+	  fi
+}
 
 rank_uniq_etherbases(){
 	f=$(tempfile)
@@ -30,18 +44,19 @@ rank_uniq_etherbases(){
 }
 
 do_alert(){
-	# TODO: set me up
-	# echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
-  # say "ruh roh, $1 $2"
    al=$1
    shift 1;
    msg="$@"
    >&2 echo " > debug.alerting: lev=$al alert=---$'\n'$msg"
+
+	 # TODO: set me up
+   # say "ruh roh, $1 $2"
+	 # echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
 }
 
 fn_set_alert(){
-    if [[ $1 -gt $alert_lev ]]; then alert_lev=$1; fi
-    # echo "1=$1 alert_lev=$alert_lev"
+    if [[ $1 -gt $alert_lev ]]; then set alert_lev=$1; fi
+    >&2 echo "setting alert 1=$1 alert_lev=$alert_lev"
     shift 1;
     alert_msg="$alert_msg$'\n'$@"
 }
@@ -49,21 +64,11 @@ fn_set_alert(){
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
 latest=$(tail -n100 "$F_blockchain_write_block" | rank_uniq_etherbases 100)
 
-# this a vanity fn that adds a symbolic delta prefix to numbers
-prefix_delta(){
-	if [[ $1 -eq 0 ]]; then
-		echo ":$1"
-	elif [[ $1 -gt 0 ]]; then
-		echo "+$1"
-	elif [[ $1 != -* ]]; then
-		echo "-$1"
-	else
-		echo "$1"
-	fi
+fn_greater_of(){
+    if [[ $2 -gt $1 ]]; then echo $2; else echo $1; fi
 }
 
-
-fn_share_print_and_alert(){
+fn_share_print(){
   local agg_percent=$1
   local agg_address=$2
 
@@ -84,24 +89,58 @@ fn_share_print_and_alert(){
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			l="$l $diff [low]"
-			fn_set_alert 1 "etherbase share decreased significantly latetly: $agg_percent $agg_address $l"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			l="$l +$diff [high]"
-			fn_set_alert 1 "etherbase share increased significantly lately: $agg_percent $agg_address $l"
 
 		else
 			l="$l $(prefix_delta $diff)"
 		fi
+    echo -n "$l"
+	fi
+}
+
+fn_share_analysis(){
+  local agg_percent=$1
+  local agg_address=$2
+
+  local a_lev=0
+  local a_msg=""
+
+ 	if ! grep -q "$agg_address" <<< "$latest"; then
+		# address has not mined a block in latest batch
+		echo "$l" > /dev/null # noop
+	else
+		latest_line=$(grep "$agg_address" <<< "$latest")
+		percent=$(echo "$latest_line" | cut -d' ' -f1)
+
+    # handle freq diff warnings
+		addr_at_agg_percent=${agg_percent##0}
+		addr_at_latest_percent=${percent##0}
+
+		diff=$((addr_at_latest_percent - addr_at_agg_percent))
+
+		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
+			a_lev=$(fn_greater_of $a_lev 1)
+      a_msg+="etherbase share decreased significantly latetly: $agg_percent $agg_address $l$'\n'"
+
+		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
+			a_lev=$(fn_greater_of $a_lev 1)
+      a_msg+="etherbase share increased significantly lately: $agg_percent $agg_address $l$'\n'"
+
+		fi
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
-        fn_set_alert 3 "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+			  a_lev=$(fn_greater_of $a_lev 3)
+        a_msg+="total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l$'\n'"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
-        fn_set_alert 1 "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+			  a_lev=$(fn_greater_of $a_lev 1)
+        a_msg+="total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l$'\n'"
     fi
-    echo -n "$l"
+    echo -n "$a_msg"
 	fi
+  return $a_lev
 }
 
 fn_blocktime_agg_dumb(){
@@ -135,43 +174,103 @@ fn_blocktime_agg_dumb(){
     fi
 }
 
-if [[ $(wc -l <<< "$latest") -lt 6 ]]; then
-    warning="very few unique etherbases participating in last 100 blocks"
-    fn_set_alert 3 "$warning"
+fn_check_latest_etherbase_variation(){
+    local a_lev=0
+    local a_msg=""
+    if [[ $(wc -l <<< "$latest") -lt 6 ]]; then
+        a_msg="very few unique etherbases participating in last 100 blocks$'\n'"
+        a_lev=3
 
-elif [[ $(wc -l <<< "$latest") -gt 25 ]]; then
-    warning="unusually high numbers of etherbases participating in last 100 blocks"
-    fn_set_alert 1 "$warning"
-fi
+    elif [[ $(wc -l <<< "$latest") -gt 25 ]]; then
+        a_msg="unusually high numbers of etherbases participating in last 100 blocks$'\n'"
+        a_lev=2
 
-run(){
-    echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
-    echo
-    while read agg_percent agg_count agg_address delta_parent_time uncles; do
-	      l="$agg_percent $agg_count $agg_address"
-
-	      latest_line=$(grep "$agg_address" <<< "$latest")
-	      percent=$(echo "$latest_line" | cut -d' ' -f1)
-        if [[ ${percent##0} -lt 1 ]]; then continue; fi
-
-        l="$l  $(fn_share_print_and_alert $agg_percent $agg_address)"
-
-        delta_selfish_candidates=$(fn_blocktime_agg_dumb $agg_percent $agg_address)
-        if [[ ! -z $delta_selfish_candidates ]]; then
-            l="$l [avg blocktime delta = $delta_selfish_candidates]"
-            if [[ $delta_selfish_candidates -lt 12 ]]; then
-                fn_set_alert 1 "potential indicator for selfish mining (low avg blocktime deltas): $l"
-            fi
-        fi
-
-	      echo "$l"
-    done <<< "$aggregate"
+    fi
+    echo "$a_msg"
+    return $a_lev
 }
 
-run
+echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+echo
+while read agg_percent agg_count agg_address _ uncles; do
+    l="$agg_percent $agg_count $agg_address"
+
+    latest_line=$(grep "$agg_address" <<< "$latest")
+    percent=$(echo "$latest_line" | cut -d' ' -f1)
+    if [[ ${percent##0} -lt 1 ]]; then continue; fi
+
+    l+="$(fn_share_print $agg_percent $agg_address)"
+
+    alert_msg+=$(fn_share_analysis $agg_percent $agg_address)
+    alert_lev=$(fn_greater_of $? $alert_lev)
+
+    delta_selfish_candidates=$(fn_blocktime_agg_dumb $agg_percent $agg_address)
+    if [[ ! -z $delta_selfish_candidates ]]; then
+        l="$l [avg blocktime delta = $delta_selfish_candidates]"
+        if [[ $delta_selfish_candidates -lt 12 ]]; then
+            alert_lev=$(fn_greater_of $alert_lev 1)
+            alert_msg+="potential indicator for selfish mining (low avg blocktime deltas): $l$'\n'"
+        fi
+    fi
+
+    echo "$l"
+done <<< "$aggregate"
+
 
 if [[ $alert_lev -ne 0 ]]; then
     do_alert $alert_lev $alert_msg
 else
     >&2 echo "alert_lev=$alert_lev"
 fi
+
+
+
+# fn_share_print_and_alert(){
+#   local agg_percent=$1
+#   local agg_address=$2
+
+#   local a_lev=0
+#   local a_msg=""
+
+#  	if ! grep -q "$agg_address" <<< "$latest"; then
+# 		# address has not mined a block in latest batch
+# 		echo "$l" > /dev/null # noop
+# 	else
+# 		latest_line=$(grep "$agg_address" <<< "$latest")
+# 		percent=$(echo "$latest_line" | cut -d' ' -f1)
+
+# 		l="|  $percent" # don't also echo address, redundant
+
+#     # handle freq diff warnings
+# 		addr_at_agg_percent=${agg_percent##0}
+# 		addr_at_latest_percent=${percent##0}
+
+# 		diff=$((addr_at_latest_percent - addr_at_agg_percent))
+
+# 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
+# 			l="$l $diff [low]"
+# 			a_lev=$(fn_greater_of $a_lev 1)
+#       a_msg+="etherbase share decreased significantly latetly: $agg_percent $agg_address $l$'\n'"
+
+# 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
+# 			l="$l +$diff [high]"
+# 			a_lev=$(fn_greater_of $a_lev 1)
+#       a_msg+="etherbase share increased significantly lately: $agg_percent $agg_address $l$'\n'"
+
+# 		else
+# 			l="$l $(prefix_delta $diff)"
+# 		fi
+
+#     # handle total share warning
+#     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
+# 			  a_lev=$(fn_greater_of $a_lev 3)
+#         a_msg+="total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l$'\n'"
+#     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
+# 			  a_lev=$(fn_greater_of $a_lev 1)
+#         a_msg+="total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l$'\n'"
+#     fi
+#     echo -n "$l"
+# 	fi
+#   return $a_lev
+# }
+
