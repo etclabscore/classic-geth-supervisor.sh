@@ -55,7 +55,7 @@ while read t line; do
 
 		f="$D_mlog_monitor_data/blockchain.reorg.blocks"
 		blocks_len=$(echo "$line" | sed -rn 's/.*blocks\.length=([0-9]+).*/\1/p')
-		blocks_last_common_hash=$(echo "$line" | sed -rn 's/.*reorg.last_common_hash=([x0123456789abcdef]+).*/\1/p')
+		blocks_last_common_hash=$(echo "$line" | sed -rn 's/.*reorg\.last_common_hash=([x0123456789abcdef]+).*/\1/p')
 			
 		echo "$t $blocks_len $blocks_last_common_hash -> $f" 
 		echo "$t $blocks_len $blocks_last_common_hash" >> "$f"

@@ -32,7 +32,20 @@ send_alert_email(){
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
 latest=$(tail -n100 "$F_blockchain_write_block" | rank_uniq_etherbases 100)
 
-echo "last $wcl blocks (eb.uniq=$wcl_uniq)                      last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)"
+# this a vanity fn that adds a symbolic delta prefix to numbers
+prefix_delta(){
+	if [[ $1 -eq 0 ]]; then
+		echo ":$1"
+	elif [[ $1 -gt 0 ]]; then
+		echo "+$1"
+	elif [[ $1 != -* ]]; then
+		echo "-$1"
+	else 
+		echo "$1"
+	fi
+}
+
+echo "last $wcl blocks (eb.uniq=$wcl_uniq)                      last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
 echo
 while read agg_percent agg_address; do
 	l="$agg_percent $agg_address"
@@ -52,15 +65,15 @@ while read agg_percent agg_address; do
 		diff=$((addr_at_latest_percent - addr_at_agg_percent))
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
-			l="$l [low] $diff"
+			l="$l $diff [low]"
 			send_alert_email "$l"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
-			l="$l [high] +$diff"
+			l="$l +$diff [high]"
 			send_alert_email "$l"
 
 		else
-			l="$l [normal] $diff"
+			l="$l $(prefix_delta $diff)"
 		fi
 	fi
 	echo "$l"
