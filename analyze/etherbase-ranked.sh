@@ -92,27 +92,33 @@ fn_share_print_and_alert(){
 }
 
 fn_blocktime_agg_dumb(){
-    local addr=$1
+    local percent=${1##0}
+    # selfish mining is only theoretically viable above 25% share.
+    if [[ $percent -lt 25 ]]; then
+        echo ""
+        return
+    fi
+    local addr=$2
     local addr_list="$(grep "$addr" "$F_blockchain_write_block")"
     local addr_list_len=$(wc -l <<< "$addr_list")
     if [[ $addr_list_len -lt 1 ]]; then
         echo ""
-    else
-        # sum blocktime deltas
-        local sum=0
-        local n=0
-        while read _ _ _ dt _; do
-            if [[ ! -z $dt ]]; then
-                n=$((n+1))
-                sum=$((sum+dt))
-            fi
-        done <<< "$addr_list"
-        if [[ $n -gt 0 ]]; then
-            avg_blocktime_delta=$((sum/n))
-            echo $avg_blocktime_delta
-        else
-            echo ""
+        return
+    fi
+    # sum blocktime deltas
+    local sum=0
+    local n=0
+    while read _ _ _ dt _; do
+        if [[ ! -z $dt ]]; then
+            n=$((n+1))
+            sum=$((sum+dt))
         fi
+    done <<< "$addr_list"
+    if [[ $n -gt 0 ]]; then
+        avg_blocktime_delta=$((sum/n))
+        echo $avg_blocktime_delta
+    else
+        echo ""
     fi
 }
 
@@ -121,8 +127,19 @@ echo
 while read agg_percent agg_count agg_address delta_parent_time uncles; do
 	l="$agg_percent $agg_count $agg_address"
 
-  l="$l [$(fn_blocktime_agg_dumb $agg_address)]"
+	latest_line=$(grep "$agg_address" <<< "$latest")
+	percent=$(echo "$latest_line" | cut -d' ' -f1)
+  if [[ ${percent##0} -lt 1 ]]; then continue; fi
+
   l="$l  $(fn_share_print_and_alert $agg_percent $agg_address)"
+
+  delta_selfish_candidates=$(fn_blocktime_agg_dumb $agg_percent $agg_address)
+  if [[ ! -z $delta_selfish_candidates ]]; then
+      l="$l [avg blocktime delta = $delta_selfish_candidates]"
+      if [[ $delta_selfish_candidates -lt 12 ]]; then
+          send_alert_email yellow "$l"
+      fi
+  fi
 
 	echo "$l"
 done <<< "$aggregate"
