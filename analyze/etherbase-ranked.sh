@@ -80,7 +80,7 @@ fn_share_print(){
 		latest_line=$(grep "$agg_address" <<< "$latest")
 		percent=$(echo "$latest_line" | cut -d' ' -f1)
 
-		l="|  $percent" # don't also echo address, redundant
+		l="|  $percent%" # don't also echo address, redundant
 
     # handle freq diff warnings
 		addr_at_agg_percent=${agg_percent##0}
