@@ -31,7 +31,11 @@ send_alert_email(){
 	# TODO: set me up
 	# echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
   # say "ruh roh, $1 $2"
-  echo "$1 $2" > /dev/null
+  # echo "$1 $2" > /dev/null
+    lev="$1"
+    shift 1;
+    alert="$@"
+   >&2 echo " > debug.alerting: lev=$lev alert=$alert"
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
@@ -71,11 +75,11 @@ fn_share_print_and_alert(){
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			l="$l $diff [low]"
-			send_alert_email yellow "$l"
+			send_alert_email yellow "etherbase share decreased significantly latetly: $agg_percent $agg_address $l"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			l="$l +$diff [high]"
-			send_alert_email yellow "$l"
+			send_alert_email yellow "etherbase share increased significantly lately: $agg_percent $agg_address $l"
 
 		else
 			l="$l $(prefix_delta $diff)"
@@ -83,9 +87,9 @@ fn_share_print_and_alert(){
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
-        send_alert_email red "$l"
+        send_alert_email red "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
-        send_alert_email yellow "$l"
+        send_alert_email yellow "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
     fi
     echo -n "$l"
 	fi
@@ -121,6 +125,15 @@ fn_blocktime_agg_dumb(){
         echo ""
     fi
 }
+
+if [[ $(wc -l <<< "$latest") -lt 6 ]]; then
+    warning="very few unique etherbases participating in last 100 blocks"
+    send_alert_email red "$warning"
+
+elif [[ $(wc -l <<< "$latest") -gt 25 ]]; then
+    warning="unusually high numbers of etherbases participating in last 100 blocks"
+    send_alert_email yellow "$warning"
+fi
 
 echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
 echo
