@@ -9,9 +9,7 @@ With these limitations in mind, it's clear these tools are best _adjacent_ to, o
 Here's what's in the folders as-is (and I'm going to regret hardcoding a directory structure in the README...):
 
 ```sh
-
-
-$ tree analyze collect/ 
+$ tree analyze collect 
 analyze                 
 └── etherbase-ranked.sh # This script analyzes the blockhain.write.block data extracted by collect/mlog-event-pipe.sh
                         # and produces an alert-ready analysis of etherbase frequency.
@@ -22,7 +20,7 @@ collect/
 0 directories, 2 files
 ```
 
-The data directory generated will look something like this:
+The data directory will look something like this:
 
 ```sh
 $ tree .classic-geth-supervisor/
