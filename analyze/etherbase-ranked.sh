@@ -123,20 +123,22 @@ fn_share_analysis(){
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share decreased significantly lately: $agg_address"
+      a_msg+="* etherbase share decreased significantly lately: $agg_address [$(prefix_delta $diff)%]"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share increased significantly lately: $agg_address"
+      a_msg+="* etherbase share increased significantly lately: $agg_address [$(prefix_delta $diff)%]"
 		fi
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
 			  a_lev=$(fn_greater_of $a_lev 3)
-        a_msg+="* total share exceeds $((50-M_margin_aggregate_diff))% $agg_address"
+        a_msg+="
+* etherbase total share exceeds $((50-M_margin_aggregate_diff))% $agg_address [$addr_at_latest_percent%]"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
 			  a_lev=$(fn_greater_of $a_lev 1)
-        a_msg+="* total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_address"
+        a_msg+="
+* etherbase total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_address [$addr_at_latest_percent%]"
     fi
     echo "$a_msg"
 	fi
