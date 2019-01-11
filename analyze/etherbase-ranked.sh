@@ -5,7 +5,7 @@ F_blockchain_write_block="${1:-"$HOME/.classic-geth-supervisor/blockchain.write.
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
 # In percent (absolute +/-).
-M_margin_aggregate_diff=${2:-5} 
+M_margin_aggregate_diff=${2:-5}
 
 wcl=$(cat $F_blockchain_write_block | wc -l)
 wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
@@ -15,18 +15,23 @@ calc(){ awk "BEGIN { print "$*"*100 }"; }
 rank_uniq_etherbases(){
 	f=$(tempfile)
 	cut -d' ' -f3 |
-		sort | uniq -c |
-		while read n addr; do 
-			echo $(printf '%02.f' "$(calc $n/$1)" && printf ' %s\n' "$addr") >> "$f"
-		done
+	    sort |
+      uniq -c |
+      # reading here the output of uniq -c, which is sum line occurences
+	    while read n addr;  do
+		      echo $(printf '%02.f ' "$(calc $n/$1)" && printf '%d ' $n && printf '%s\n' "$addr") >> "$f"
+	    done
 	cat "$f" | sort -r
 	rm "$f"
 }
 
+# @1 level
+# @2 warning text
 send_alert_email(){
 	# TODO: set me up
-	# echo "$1" | mail -s '[etc.alert][etherbase rank]' isaac.ardis@gmail.com # et al, hopefully
-	echo "$1" > /dev/null
+	# echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
+  # say "ruh roh, $1 $2"
+  echo "$1 $2" > /dev/null
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
@@ -40,25 +45,25 @@ prefix_delta(){
 		echo "+$1"
 	elif [[ $1 != -* ]]; then
 		echo "-$1"
-	else 
+	else
 		echo "$1"
 	fi
 }
 
-echo "last $wcl blocks (eb.uniq=$wcl_uniq)                      last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
-echo
-while read agg_percent agg_address; do
-	l="$agg_percent $agg_address"
-	if ! grep -q "$agg_address" <<< "$latest"; then
+fn_share_print_and_alert(){
+  local agg_percent=$1
+  local agg_address=$2
+
+ 	if ! grep -q "$agg_address" <<< "$latest"; then
 		# address has not mined a block in latest batch
 		echo "$l" > /dev/null # noop
 	else
 		latest_line=$(grep "$agg_address" <<< "$latest")
 		percent=$(echo "$latest_line" | cut -d' ' -f1)
-		address=$(echo "$latest_line" | cut -d' ' -f2)
 
-		l="$l  |  $percent" # don't also echo address, redundant
+		l="|  $percent" # don't also echo address, redundant
 
+    # handle freq diff warnings
 		addr_at_agg_percent=${agg_percent##0}
 		addr_at_latest_percent=${percent##0}
 
@@ -66,16 +71,58 @@ while read agg_percent agg_address; do
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			l="$l $diff [low]"
-			send_alert_email "$l"
+			send_alert_email yellow "$l"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			l="$l +$diff [high]"
-			send_alert_email "$l"
+			send_alert_email yellow "$l"
 
 		else
 			l="$l $(prefix_delta $diff)"
 		fi
+
+    # handle total share warning
+    if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
+        send_alert_email red "$l"
+    elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
+        send_alert_email yellow "$l"
+    fi
+    echo -n "$l"
 	fi
+}
+
+fn_blocktime_agg_dumb(){
+    local addr=$1
+    local addr_list="$(grep "$addr" "$F_blockchain_write_block")"
+    local addr_list_len=$(wc -l <<< "$addr_list")
+    if [[ $addr_list_len -lt 1 ]]; then
+        echo ""
+    else
+        # sum blocktime deltas
+        local sum=0
+        local n=0
+        while read _ _ _ dt _; do
+            if [[ ! -z $dt ]]; then
+                n=$((n+1))
+                sum=$((sum+dt))
+            fi
+        done <<< "$addr_list"
+        if [[ $n -gt 0 ]]; then
+            avg_blocktime_delta=$((sum/n))
+            echo $avg_blocktime_delta
+        else
+            echo ""
+        fi
+    fi
+}
+
+echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+echo
+while read agg_percent agg_count agg_address delta_parent_time uncles; do
+	l="$agg_percent $agg_count $agg_address"
+
+  l="$l [$(fn_blocktime_agg_dumb $agg_address)]"
+  l="$l  $(fn_share_print_and_alert $agg_percent $agg_address)"
+
 	echo "$l"
 done <<< "$aggregate"
-
