@@ -2,7 +2,7 @@
 
 - [./etherbase-ranked.sh](./etherbase-ranked.sh) Shows all uniq `etherbase`'s for blocks written, ranked by frequency, comparing last 5000 blocks with latest 100.
 
-  The numbers on the left represent percent share of etherbase across _n_ blocks, so of the last 5000 blocks, 38% were credited to etherbase `0xdf7d7e053933b5cc24372f878c90e62dadad5d42`. The first section is in aggregate (thru the default max 5000 log line limit, representing the last 5000 blocks written), and the second does the same analysis, but only across the last 100 blocks. If an etherbase's share in the last 100 blocks varies from it's aggregate "normal" share, where the variance delta is configurable with an argument (default +/- 5%), then `[high]` or `[low]` is appended and at the code level intended to indicate that further behavior can be supplemented based on this logic, eg. `echo "$line" | mail -s [etherbase variance] security@somewhere.org`.
+  The numbers on the left represent percent share of etherbase across _n_ blocks, so of the last 5000 blocks, 37% were credited to etherbase `0xdf7d7e053933b5cc24372f878c90e62dadad5d42`. The first section is in aggregate (thru the default max 5000 log line limit, representing the last 5000 blocks written), and the second does the same analysis, but only across the last 100 blocks. If an etherbase's share in the last 100 blocks varies from it's aggregate "normal" share, where the variance delta is configurable with an argument (default +/- 5%), then `[high]` or `[low]` is appended and at the code level, intended to indicate that further behavior can be supplemented based on this logic, eg. `echo "$line" | mail -s [etherbase variance] security@somewhere.org`.
   
   See script for details.
   
