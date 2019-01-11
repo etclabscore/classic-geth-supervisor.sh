@@ -29,19 +29,19 @@ rank_uniq_etherbases(){
 	rm "$f"
 }
 
-# @1 level
-# @2 warning text
 do_alert(){
 	# TODO: set me up
 	# echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
   # say "ruh roh, $1 $2"
-  # echo "$1 $2" > /dev/null
-   # >&2 echo " > debug.alerting: lev=$lev alert=$alert"
-   >&2 echo " > debug.alerting: lev=$alert_lev alert=---$'\n'$alert_msg"
+   al=$1
+   shift 1;
+   msg="$@"
+   >&2 echo " > debug.alerting: lev=$al alert=---$'\n'$msg"
 }
 
 fn_set_alert(){
     if [[ $1 -gt $alert_lev ]]; then alert_lev=$1; fi
+    # echo "1=$1 alert_lev=$alert_lev"
     shift 1;
     alert_msg="$alert_msg$'\n'$@"
 }
@@ -144,28 +144,34 @@ elif [[ $(wc -l <<< "$latest") -gt 25 ]]; then
     fn_set_alert 1 "$warning"
 fi
 
-echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
-echo
-while read agg_percent agg_count agg_address delta_parent_time uncles; do
-	l="$agg_percent $agg_count $agg_address"
+run(){
+    echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+    echo
+    while read agg_percent agg_count agg_address delta_parent_time uncles; do
+	      l="$agg_percent $agg_count $agg_address"
 
-	latest_line=$(grep "$agg_address" <<< "$latest")
-	percent=$(echo "$latest_line" | cut -d' ' -f1)
-  if [[ ${percent##0} -lt 1 ]]; then continue; fi
+	      latest_line=$(grep "$agg_address" <<< "$latest")
+	      percent=$(echo "$latest_line" | cut -d' ' -f1)
+        if [[ ${percent##0} -lt 1 ]]; then continue; fi
 
-  l="$l  $(fn_share_print_and_alert $agg_percent $agg_address)"
+        l="$l  $(fn_share_print_and_alert $agg_percent $agg_address)"
 
-  delta_selfish_candidates=$(fn_blocktime_agg_dumb $agg_percent $agg_address)
-  if [[ ! -z $delta_selfish_candidates ]]; then
-      l="$l [avg blocktime delta = $delta_selfish_candidates]"
-      if [[ $delta_selfish_candidates -lt 12 ]]; then
-          fn_set_alert 1 "$l"
-      fi
-  fi
+        delta_selfish_candidates=$(fn_blocktime_agg_dumb $agg_percent $agg_address)
+        if [[ ! -z $delta_selfish_candidates ]]; then
+            l="$l [avg blocktime delta = $delta_selfish_candidates]"
+            if [[ $delta_selfish_candidates -lt 12 ]]; then
+                fn_set_alert 1 "potential indicator for selfish mining (low avg blocktime deltas): $l"
+            fi
+        fi
 
-	echo "$l"
-done <<< "$aggregate"
+	      echo "$l"
+    done <<< "$aggregate"
+}
 
-if [[ $alert_lev -gt 0 ]]; then
-    do_alert
+run
+
+if [[ $alert_lev -ne 0 ]]; then
+    do_alert $alert_lev $alert_msg
+else
+    >&2 echo "alert_lev=$alert_lev"
 fi
