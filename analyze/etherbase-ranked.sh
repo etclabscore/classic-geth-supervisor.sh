@@ -47,11 +47,7 @@ do_alert(){
    al=$1
    shift 1;
    msg="$@"
-   >&2 echo " > debug.alerting: lev=$al alert=
----
-$msg
----"
-
+   >&2 echo "> debug.alerting: lev=$al alert=$msg"
 	 # TODO: set me up
    # say "ruh roh, $1 $2"
 	 # echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
@@ -84,10 +80,10 @@ fn_share_print(){
 		diff=$((addr_at_latest_percent - addr_at_agg_percent))
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
-			l="$l $diff [low]"
+			l="$l $diff [lower]"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
-			l="$l +$diff [high]"
+			l="$l +$diff [higher]"
 
 		else
 			l="$l $(prefix_delta $diff)"
@@ -206,11 +202,12 @@ while read agg_percent agg_count agg_address _ uncles; do
     l+="  $(fn_share_print $agg_percent $agg_address)"
 
     am="$(fn_share_analysis $agg_percent $agg_address)"
+    alert_lev=$(fn_greater_of $? $alert_lev)
     if [[ ! -z $am ]]; then
-        alert_msg+="$am
+        alert_msg+="
+$am
 "
     fi
-    alert_lev=$(fn_greater_of $? $alert_lev)
 
     delta_selfish_candidates=$(fn_blocktime_agg_avg $agg_percent $agg_address)
     if [[ ! -z $delta_selfish_candidates ]]; then
@@ -231,5 +228,5 @@ done <<< "$aggregate"
 if [[ $alert_lev -ne 0 ]]; then
     do_alert $alert_lev "$alert_msg" "$output"
 else
-    >&2 echo "alert_lev=$alert_lev"
+    >&2 echo "> debug.alert_lev=$alert_lev"
 fi
