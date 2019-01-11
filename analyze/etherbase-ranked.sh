@@ -10,6 +10,10 @@ M_margin_aggregate_diff=${2:-5}
 wcl=$(cat $F_blockchain_write_block | wc -l)
 wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
 
+# Globals for alerting
+alert_lev=0
+alert_msg=""
+
 calc(){ awk "BEGIN { print "$*"*100 }"; }
 
 rank_uniq_etherbases(){
@@ -27,15 +31,19 @@ rank_uniq_etherbases(){
 
 # @1 level
 # @2 warning text
-send_alert_email(){
+do_alert(){
 	# TODO: set me up
 	# echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
   # say "ruh roh, $1 $2"
   # echo "$1 $2" > /dev/null
-    lev="$1"
+   # >&2 echo " > debug.alerting: lev=$lev alert=$alert"
+   >&2 echo " > debug.alerting: lev=$alert_lev alert=---$'\n'$alert_msg"
+}
+
+fn_set_alert(){
+    if [[ $1 -gt $alert_lev ]]; then alert_lev=$1; fi
     shift 1;
-    alert="$@"
-   >&2 echo " > debug.alerting: lev=$lev alert=$alert"
+    alert_msg="$alert_msg$'\n'$@"
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
@@ -53,6 +61,7 @@ prefix_delta(){
 		echo "$1"
 	fi
 }
+
 
 fn_share_print_and_alert(){
   local agg_percent=$1
@@ -75,11 +84,11 @@ fn_share_print_and_alert(){
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 			l="$l $diff [low]"
-			send_alert_email yellow "etherbase share decreased significantly latetly: $agg_percent $agg_address $l"
+			fn_set_alert 1 "etherbase share decreased significantly latetly: $agg_percent $agg_address $l"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 			l="$l +$diff [high]"
-			send_alert_email yellow "etherbase share increased significantly lately: $agg_percent $agg_address $l"
+			fn_set_alert 1 "etherbase share increased significantly lately: $agg_percent $agg_address $l"
 
 		else
 			l="$l $(prefix_delta $diff)"
@@ -87,9 +96,9 @@ fn_share_print_and_alert(){
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
-        send_alert_email red "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+        fn_set_alert 3 "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
-        send_alert_email yellow "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
+        fn_set_alert 1 "total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_percent $agg_address $l"
     fi
     echo -n "$l"
 	fi
@@ -128,11 +137,11 @@ fn_blocktime_agg_dumb(){
 
 if [[ $(wc -l <<< "$latest") -lt 6 ]]; then
     warning="very few unique etherbases participating in last 100 blocks"
-    send_alert_email red "$warning"
+    fn_set_alert 3 "$warning"
 
 elif [[ $(wc -l <<< "$latest") -gt 25 ]]; then
     warning="unusually high numbers of etherbases participating in last 100 blocks"
-    send_alert_email yellow "$warning"
+    fn_set_alert 1 "$warning"
 fi
 
 echo "last $wcl blocks (eb.uniq=$wcl_uniq)                        | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
@@ -150,9 +159,13 @@ while read agg_percent agg_count agg_address delta_parent_time uncles; do
   if [[ ! -z $delta_selfish_candidates ]]; then
       l="$l [avg blocktime delta = $delta_selfish_candidates]"
       if [[ $delta_selfish_candidates -lt 12 ]]; then
-          send_alert_email yellow "$l"
+          fn_set_alert 1 "$l"
       fi
   fi
 
 	echo "$l"
 done <<< "$aggregate"
+
+if [[ $alert_lev -gt 0 ]]; then
+    do_alert
+fi
