@@ -148,9 +148,9 @@ fn_share_analysis(){
 # NOTE: avg is not necessarily a good indicator.
 # A selfish miner could disguise 'fast batches' of wins with a few exceptionally long waits.
 # I'm not sure of the economics or math of this though, 'cuz obviously the wait would be expensive too.
-# Just saying.
+# Just saying I don't the delta distribution is normal and average is not usually a descriptive measure for long tails.
 # What we really want is to see if their long tail delta graph has an apex closer to 0 than competitors.
-fn_blocktime_agg_avg(){
+fn_blocktime_agg_stats(){
     local percent=${1##0}
     # selfish mining is only theoretically viable above 25% share.
     if [[ $percent -lt 25 ]]; then
@@ -167,15 +167,34 @@ fn_blocktime_agg_avg(){
     # sum blocktime deltas
     local sum=0
     local n=0
+    # local min
+    # local max=0
+    # local median=0
+    # local F_med=$(tempfile)
     while read _ _ _ dt _; do
-        if [[ ! -z $dt ]]; then
+        if [[ ! -z $dt ]]; then # conditional for dumb "backwards compatible" reasons because I added the field
             n=$((n+1))
             sum=$((sum+dt))
+            # min=${min:-dt} # set a value for min if the var is undefined (we don't want min=0 if that's not true)
+            # if [[ $dt -gt $max ]]; then
+            #     max=dt
+            # elif [[ $dt -lt $min ]]; then
+            #     min=dt
+            # fi
+            # echo "$dt" >> "$F_med"
         fi
     done <<< "$addr_list"
+
+    # get median from collection file
+    # local F_med_len=$(wc -l "$F_med")
+    # F_med_len=$((F_med_len/2))
+    # median=$(tail -n "$F_med" | head -n 1) # close 'nuff
+    # rm "$F_med"
+
     if [[ $n -gt 0 ]]; then
         avg_blocktime_delta=$((sum/n))
-        echo $avg_blocktime_delta
+        # echo "$min $max $median $avg_blocktime_delta"
+        echo "$avg_blocktime_delta"
     else
         echo ""
     fi
@@ -220,7 +239,7 @@ $am
 "
     fi
 
-    delta_selfish_candidates=$(fn_blocktime_agg_avg $agg_percent $agg_address)
+    delta_selfish_candidates=$(fn_blocktime_agg_stats $agg_percent $agg_address)
     if [[ ! -z $delta_selfish_candidates ]]; then
         l="$l [avg blocktime delta = $delta_selfish_candidates]"
         if [[ $delta_selfish_candidates -lt 12 ]]; then
