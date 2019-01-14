@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 alert_lev="$1"
 alert_msg="$2"
 

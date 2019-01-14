@@ -29,7 +29,7 @@ These scripts are designed to be configurable, so you can add your alerting serv
 
     API:
     ```sh
-    ./analyze/supervise.sh [-m=N] [./alert/robot-computer.sh] [./another-alert-script.sh] [./the-one-that-feeds-my-dog-on-red-alerts.sh] [...]
+    ./analyze/supervise.sh [-m=N] [./alert/echo.sh] [./say.sh] [./the-one-that-feeds-my-dog-on-red-alerts.sh] [...]
     ```
     API in plain english:
 
@@ -43,7 +43,7 @@ These scripts are designed to be configurable, so you can add your alerting serv
       classic-geth-supervisor.sh/analyze/supervise.sh -m=6
     ```
   
-- [./alert/robot-computer.sh](./alert/robot-computer.sh) is the exemplary alerting tool. 
+- [./alert/echo.sh](./alert/echo.sh) is the exemplary alerting tool. 
 
     API:
     ```sh
@@ -57,7 +57,7 @@ These scripts are designed to be configurable, so you can add your alerting serv
     ```sh
     $ tail -F $HOME/.ethereum-classic/mainnet/mlogs/geth.log | classic-geth-supervisor.sh/collect/mlog-event-pipe.sh \
       classic-geth-supervisor.sh/analyze/supervise.sh -m=6 \
-      classic-geth-supervisor.sh/alert/robot-computer.sh
+      classic-geth-supervisor.sh/alert/echo.sh
     ```
 
 - [./env.sh](./env.sh) use this script to export vars that will override defaults.
