@@ -2,16 +2,17 @@
 
 use=$(cat <<EOF
 Use:
-	tail -F geth.log | thisscript.sh [analyzerscript.sh] [alertingscript.sh]
 
-  If an 'analyzerscript.sh' is provided, it will be run after each new interesting log line.
-  If the analyzer script is subsequently passed an 'alertingscript.sh', then the analyzer
-  script will call that script if it yields alert-worthy results.
+	$ tail -F geth.log | thisscript.sh [analyzerscript.sh] [alertingscript.sh]
 
-  Since the analyzer script uses a static data store that's fed by this script, it doesn't get
-  any arguments.
+      If an 'analyzerscript.sh' is provided, it will be run after each new interesting log line.
+      If the analyzer script is subsequently passed an 'alertingscript.sh', then the analyzer
+      script will call that script if it yields alert-worthy results.
 
-  The alerting script will be passed two arguments, where 1=[red|orange|yellow] 2=[body]
+      Since the analyzer script uses a static data store that's fed by this script, it doesn't get
+      any arguments.
+
+      The alerting script will be passed two arguments, where 1=[red|orange|yellow] 2=[body]
 
 EOF
 )
@@ -31,8 +32,8 @@ else
     echo "Like from a cron, or whatever."
 fi
 
-D_mlog_monitor_data=${CG_DATADIR:-"$HOME/.classic-geth-supervisor"}
-data_max_length=${CG_LINEMAX:-5000}
+D_mlog_monitor_data=${CGS_DATADIR:-"$HOME/.classic-geth-supervisor"}
+data_max_length=${CGS_LINEMAX:-5000}
 
 mkdir -p "$D_mlog_monitor_data"
 
@@ -40,7 +41,6 @@ truncate_to_file_max(){
 	tail -n "$data_max_length" "$1" > "$1.tmp"
 	cat "$1.tmp" > "$f"
 }
-
 
 while read t line; do
 	if grep -q --line-buffered 'BLOCKCHAIN WRITE BLOCK' <<< "$line"; then

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Either pass a first arg as the path to a geth logfile containing only grep'd BLOCKCHAIN.WRITE.BLOCK lines, or use my default sandbox file which doesn't exist on your computer.
-D_datadir=${CG_DATADIR:-"$HOME/.classic-geth-supervisor"}
+D_datadir=${CGS_DATADIR:-"$HOME/.classic-geth-supervisor"}
 F_blockchain_write_block="$D_datadir/blockchain.write.block"
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
@@ -20,15 +20,16 @@ do
 done
 shift $((OPTIND-1))
 
-alertscript="$1"
-if [[ ! -x "$1" ]]
+if [[ $# -lt 1 ]]
 then
     echo "WARNING:"
-    echo "No alerting script provided. It should be the first non-flag argument to this script."
+    echo "No alerting script(s) provided. They should be non-flag arguments to this script."
     echo
-    echo "That might be ok, it's up to you. Maybe you're just using this script as a one off,"
+    echo "However, that might be ok, it's up to you. Maybe you're just using this script as a one off,"
     echo "or handling the stderr output separately."
 fi
+
+declare -a alertscripts=("$@")
 
 wcl=$(cat $F_blockchain_write_block | wc -l)
 wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
@@ -58,7 +59,7 @@ rank_uniq_etherbases(){
 	cut -d' ' -f3 |
 	    sort |
       uniq -c |
-      # reading here the output of uniq -c, which is sum line occurences
+      # reading here th output of uniq -c, which is sum line occurences
 	    while read n addr;  do
 		      echo $(printf '%02.f ' "$(calc $n/$1)" && printf '%d ' $n && printf '%s\n' "$addr") >> "$f"
 	    done
@@ -81,10 +82,15 @@ do_alert(){
    esac
    >&2 echo "> stderr.alerting: lev=$alertcode alert=$msg"
 
-   if [[ -x "$alertscript" ]]
-   then
-       source "$alertscript" "$alertcode" "$msg"
-   fi
+   for s in "${alertscripts[@]}"
+   do
+       if [[ -x "$s" ]]
+       then
+           source "$s" "$alertcode" "$msg"
+       else
+           echo "Cannot execute alert script '$s'. Please check permissions."
+       fi
+   done
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
