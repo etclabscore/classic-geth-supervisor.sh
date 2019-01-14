@@ -21,10 +21,8 @@ done
 shift $((OPTIND-1))
 
 alertscript="$1"
-if [[ -x "$1" ]]
+if [[ ! -x "$1" ]]
 then
-    shift 1;
-else
     echo "WARNING:"
     echo "No alerting script provided. It should be the first non-flag argument to this script."
     echo
