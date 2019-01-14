@@ -34,8 +34,8 @@ These scripts are designed to be configurable, so you can add your alerting serv
     API in plain english:
 
     + It accepts one flag, `-m`, determining the margin of deviating percent from average that should be considered alert-worthy for etherbase share, increasing, decreasing, or nearing 50%. 
-      The value can be a number between 1-26, by default is 5.
-    + It accepts _n_ arguments, where each is an executable alerting script. See below for the data they're receive and how they'll receive it.
+      The value can be a number between 1-24, by default is 5.
+    + It accepts _n_ arguments, where each is an executable alerting script. See below for the data they'll receive and how they'll receive it.
     + It prints all `echo`s to `stderr`, since it's purpose in life is not to print things to the shell, but to provide given subsequent interfaces with data.
     
     ```sh
