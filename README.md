@@ -62,6 +62,8 @@ These scripts are designed to be configurable, so you can add your alerting serv
       classic-geth-supervisor.sh/alert/robot-computer.sh
     ```
 
+- [./env.sh](./env.sh) use this script to export vars that will override defaults.
+
 :clap: 
 
 #### All together example
