@@ -250,8 +250,8 @@ fn_check_latest_etherbase_variation(){
 }
 
 
->&2 echo "last $wcl blocks (eb.uniq=$wcl_uniq)                  #bks  | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
->&2 echo
+# >&2 echo "last $wcl blocks (eb.uniq=$wcl_uniq)                  #bks  | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+# >&2 echo
 output=""
 while read agg_percent agg_count agg_address _ uncles; do
     l="$agg_address $agg_percent% $(printf '%04d' $agg_count)"
@@ -280,7 +280,7 @@ $am
         fi
     fi
 
-    >&2 echo "$l"
+    # >&2 echo "$l"
     output+="$l
 "
 done <<< "$aggregate"
@@ -291,5 +291,5 @@ if [[ $alert_lev -ne 0 ]]; then
 ---
 $output"
 else
-    >&2 echo "> stderr.noalert: alert_lev=$alert_lev"
+    >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
 fi
