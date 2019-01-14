@@ -1,11 +1,36 @@
 #!/usr/bin/env bash
 
 # Either pass a first arg as the path to a geth logfile containing only grep'd BLOCKCHAIN.WRITE.BLOCK lines, or use my default sandbox file which doesn't exist on your computer.
-F_blockchain_write_block="${1:-"$HOME/.classic-geth-supervisor/blockchain.write.block"}"
+D_datadir=${CG_DATADIR:-"$HOME/.classic-geth-supervisor"}
+F_blockchain_write_block="$D_datadir/blockchain.write.block"
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
 # In percent (absolute +/-).
-M_margin_aggregate_diff=${2:-5}
+M_margin_aggregate_diff=5
+while getopts "m:" o
+do
+    case "${o}" in
+        m)
+            M_margin_aggregate_diff=${OPTARG}
+            ;;
+        *)
+            echo "invalid use, use '-m=[1-24]"
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+alertscript="$1"
+if [[ -x "$1" ]]
+then
+    shift 1;
+else
+    echo "WARNING:"
+    echo "No alerting script provided. It should be the first non-flag argument to this script."
+    echo
+    echo "That might be ok, it's up to you. Maybe you're just using this script as a one off,"
+    echo "or handling the stderr output separately."
+fi
 
 wcl=$(cat $F_blockchain_write_block | wc -l)
 wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
@@ -56,10 +81,12 @@ do_alert(){
            alertcode="red"
            ;;
    esac
-   >&2 echo "> debug.alerting: lev=$alertcode alert=$msg"
-	 # TODO: set me up
-   # say "ruh roh, $1 $2"
-	 # echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
+   >&2 echo "> stderr.alerting: lev=$alertcode alert=$msg"
+
+   if [[ -x "$alertscript" ]]
+   then
+       source "$alertscript" "$alertcode" "$msg"
+   fi
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
@@ -260,5 +287,5 @@ if [[ $alert_lev -ne 0 ]]; then
 ---
 $output"
 else
-    >&2 echo "> debug.alert_lev=$alert_lev"
+    >&2 echo "> stderr.noalert: alert_lev=$alert_lev"
 fi
