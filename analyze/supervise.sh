@@ -114,8 +114,9 @@ fn_share_print(){
 	else
 		latest_line=$(grep "$agg_address" <<< "$latest")
 		percent=$(echo "$latest_line" | cut -d' ' -f1)
+    count=$(echo "$latest_line" | cut -d' ' -f2)
 
-		l="|  $percent%" # don't also echo address, redundant
+		l="| $percent% $(printf '%02d' $count)" # don't also echo address, redundant
 
     # handle freq diff warnings
 		addr_at_agg_percent=${agg_percent##0}
@@ -124,13 +125,13 @@ fn_share_print(){
 		diff=$((addr_at_latest_percent - addr_at_agg_percent))
 
 		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
-			l="$l $diff [lower]"
+			l="$l __ $diff [lower]"
 
 		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
-			l="$l +$diff [higher]"
+			l="$l __ +$diff [higher]"
 
 		else
-			l="$l $(prefix_delta $diff)"
+			l="$l __ $(prefix_delta $diff)"
 		fi
     echo -n "$l"
 	fi
