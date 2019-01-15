@@ -71,8 +71,11 @@ do_alert(){
    al=$1
    shift 1;
    msg="$@"
-   alertcode="yellow"
+   alertcode="green"
    case $al in
+       1)
+           alertcode="yellow"
+           ;;
        2)
            alertcode="orange"
            ;;
@@ -291,5 +294,6 @@ if [[ $alert_lev -ne 0 ]]; then
 ---
 $output"
 else
-    >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
+    # >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
+    do_alert 0 "no glaring vulernabilities"
 fi
