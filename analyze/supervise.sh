@@ -167,8 +167,12 @@ fn_share_analysis(){
 		fi
 
     # handle total share warning
-    if [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
+    if [[ $addr_at_latest_percent -gt 50 ]]; then
 			  a_lev=$(fn_greater_of $a_lev 3)
+        a_msg+="
+* etherbase total share exceeds 50% $agg_address [$addr_at_latest_percent%]"
+    elif [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
+			  a_lev=$(fn_greater_of $a_lev 2)
         a_msg+="
 * etherbase total share exceeds $((50-M_margin_aggregate_diff))% $agg_address [$addr_at_latest_percent%]"
     elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
