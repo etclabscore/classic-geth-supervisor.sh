@@ -301,5 +301,5 @@ if [[ $alert_lev -ne 0 ]]; then
 $output"
 else
     # >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
-    do_alert 0 "no glaring vulernabilities"
+    do_alert 0 "no glaring vulnerabilities"
 fi
