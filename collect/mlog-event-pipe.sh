@@ -30,6 +30,7 @@ else
     echo
     echo "That might be ok. You can run analyzer scripts separately, too."
     echo "Like from a cron, or whatever."
+    echo
 fi
 
 D_mlog_monitor_data=${CGS_DATADIR:-"$HOME/.classic-geth-supervisor"}

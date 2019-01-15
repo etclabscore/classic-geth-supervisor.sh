@@ -27,6 +27,7 @@ then
     echo
     echo "However, that might be ok, it's up to you. Maybe you're just using this script as a one off,"
     echo "or handling the stderr output separately."
+    echo
 fi
 
 declare -a alertscripts=("$@")
