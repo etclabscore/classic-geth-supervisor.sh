@@ -137,52 +137,80 @@ fn_share_print(){
 	fi
 }
 
-fn_share_analysis(){
-  local agg_percent=$1
-  local agg_address=$2
+fn_analysis_etherbase_share_variation(){
+    local address=$1
+    local agg_percent=$2
 
-  local a_lev=0
-  local a_msg=""
+    local a_lev=0
+    local a_msg=""
 
- 	if ! grep -q "$agg_address" <<< "$latest"; then
-		# address has not mined a block in latest batch
-		echo "" > /dev/null # noop
-	else
-		latest_line=$(grep "$agg_address" <<< "$latest")
-		percent=$(echo "$latest_line" | cut -d' ' -f1)
+    # address has not mined a block in latest batch
+    if ! grep -q "$address" <<< "$latest"; then
+        exit $a_lev
+    fi
+
+    latest_line=$(grep "$address" <<< "$latest")
+    percent=$(echo "$latest_line" | cut -d' ' -f1)
 
     # handle freq diff warnings
-		addr_at_agg_percent=${agg_percent##0}
-		addr_at_latest_percent=${percent##0}
+    addr_at_agg_percent=${agg_percent##0}
+    addr_at_latest_percent=${percent##0}
 
-		diff=$((addr_at_latest_percent - addr_at_agg_percent))
+    diff=$((addr_at_latest_percent - addr_at_agg_percent))
 
-		if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
-			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share decreased significantly lately: $agg_address [$(prefix_delta $diff)%]"
+    # only care about share variation for big miners
+    if [[ $addr_at_latest_percent -gt 20 || $addr_at_agg_percent -gt 15 ]]; then
+        if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 
-		elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
-			a_lev=$(fn_greater_of $a_lev 1)
-      a_msg+="* etherbase share increased significantly lately: $agg_address [$(prefix_delta $diff)%]"
-		fi
+            a_lev=$(fn_greater_of $a_lev 1)
+            a_msg+=$(echo "* decreased significantly lately: $address [$(prefix_delta $diff)%]")
+
+        elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
+
+            a_lev=$(fn_greater_of $a_lev 1)
+            a_msg+=$(echo "* increased significantly lately: $address [$(prefix_delta $diff)%]")
+
+        fi
+    fi
+    echo "${a_msg:-OK}"
+    return $a_lev
+}
+
+fn_analysis_etherbase_share_total(){
+    local address=$1
+
+    local a_lev=0
+    local a_msg=""
+
+    # address has not mined a block in latest batch
+    if ! grep -q "$address" <<< "$latest"; then
+        exit $a_lev
+    fi
+
+    latest_line=$(grep "$address" <<< "$latest")
+    percent=$(echo "$latest_line" | cut -d' ' -f1)
+
+    addr_at_latest_percent=${percent##0}
 
     # handle total share warning
     if [[ $addr_at_latest_percent -gt 50 ]]; then
-			  a_lev=$(fn_greater_of $a_lev 3)
-        a_msg+="
-* etherbase total share exceeds 50% $agg_address [$addr_at_latest_percent%]"
-    elif [[ $addr_at_latest_percent -gt $((50-M_margin_aggregate_diff)) ]]; then
-			  a_lev=$(fn_greater_of $a_lev 2)
-        a_msg+="
-* etherbase total share exceeds $((50-M_margin_aggregate_diff))% $agg_address [$addr_at_latest_percent%]"
-    elif [[ $addr_at_latest_percent -gt $((50-2*M_margin_aggregate_diff)) ]]; then
-			  a_lev=$(fn_greater_of $a_lev 1)
-        a_msg+="
-* etherbase total share exceeds $((50-2*M_margin_aggregate_diff))% $agg_address [$addr_at_latest_percent%]"
+
+        a_lev=$(fn_greater_of $a_lev 3)
+        a_msg+=$(echo "* exceeds 50% $address [$addr_at_latest_percent%]")
+
+    elif [[ $addr_at_latest_percent -gt $((45)) ]]; then
+
+        a_lev=$(fn_greater_of $a_lev 2)
+        a_msg+=$(echo "* exceeds 45% $address [$addr_at_latest_percent%]")
+
+    elif [[ $addr_at_latest_percent -gt $((40)) ]]; then
+
+        a_lev=$(fn_greater_of $a_lev 1)
+        a_msg+=$(echo "* exceeds 40% $address [$addr_at_latest_percent%]")
+
     fi
-    echo "$a_msg"
-	fi
-  return $a_lev
+    echo "${a_msg:-OK}"
+    return $a_lev
 }
 
 # NOTE: avg is not necessarily a good indicator.
@@ -271,9 +299,9 @@ while read agg_percent agg_count agg_address _ uncles; do
 
     l+="  $(fn_share_print $agg_percent $agg_address)"
 
-    am="$(fn_share_analysis $agg_percent $agg_address)"
+    am="$(fn_analysis_etherbase_share_total $agg_address)"
     alert_lev=$(fn_greater_of $? $alert_lev)
-    if [[ ! -z $am ]]; then
+    if [[ ! -z $am && $am != "OK" ]]; then
         alert_msg+="
 $am
 "
