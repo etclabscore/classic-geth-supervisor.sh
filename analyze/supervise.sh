@@ -6,7 +6,7 @@ F_blockchain_write_block="$D_datadir/blockchain.write.block"
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
 # In percent (absolute +/-).
-M_margin_aggregate_diff=5
+M_margin_aggregate_diff=7
 while getopts "m:" o
 do
     case "${o}" in
@@ -55,6 +55,8 @@ prefix_delta(){
 	  fi
 }
 
+s2_="  "
+s4_="    "
 line_append_one(){
     echo "$1"
     shift 1;
@@ -149,12 +151,24 @@ fn_analysis_etherbase_share_variation(){
 
     diff=$((addr_at_latest_percent - addr_at_agg_percent))
 
-    # only care about share variation for big miners
-    if [[ $addr_at_latest_percent -gt 20 || $addr_at_agg_percent -gt 15 ]]; then
-        if [[ $diff -lt $((-1 * M_margin_aggregate_diff * 3 / 2)) ]]; then
+    # only care about share variation for bigish miners
+    if [[ $addr_at_latest_percent -gt 25 || $addr_at_agg_percent -gt 20 ]]; then
+
+        if [[ $diff -lt $((-2 * M_margin_aggregate_diff)) ]]; then
+
+            a_lev=$(fn_greater_of $a_lev 2)
+            a_msg+="decreased significantly lately: $address [$(prefix_delta $diff)%]"
+
+
+        elif [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
 
             a_lev=$(fn_greater_of $a_lev 1)
             a_msg+="decreased significantly lately: $address [$(prefix_delta $diff)%]"
+
+        elif [[ $diff -gt $((2 * M_margin_aggregate_diff)) ]]; then
+
+            a_lev=$(fn_greater_of $a_lev 2)
+            a_msg="increased significantly lately: $address [$(prefix_delta $diff)%]"
 
         elif [[ $diff -gt $((M_margin_aggregate_diff)) ]]; then
 
@@ -179,20 +193,20 @@ fn_analysis_etherbase_share_total(){
     addr_at_latest_percent=${percent##0}
 
     # handle total share warning
-    if [[ $addr_at_latest_percent -gt 50 ]]; then
+    if [[ $addr_at_latest_percent -gt 49 ]]; then
 
         a_lev=$(fn_greater_of $a_lev 3)
-        a_msg="exceeds 50%: $address [$addr_at_latest_percent%]"
+        a_msg="exceeds 49%: $address [$addr_at_latest_percent%]"
 
-    elif [[ $addr_at_latest_percent -gt $((45)) ]]; then
+    elif [[ $addr_at_latest_percent -gt $((44)) ]]; then
 
         a_lev=$(fn_greater_of $a_lev 2)
-        a_msg="exceeds 45%: $address [$addr_at_latest_percent%]"
+        a_msg="exceeds 44%: $address [$addr_at_latest_percent%]"
 
-    elif [[ $addr_at_latest_percent -gt $((40)) ]]; then
+    elif [[ $addr_at_latest_percent -gt $((39)) ]]; then
 
         a_lev=$(fn_greater_of $a_lev 1)
-        a_msg="exceeds 40%: $address [$addr_at_latest_percent%]"
+        a_msg="exceeds 39%: $address [$addr_at_latest_percent%]"
 
     fi
     echo "$a_msg"
