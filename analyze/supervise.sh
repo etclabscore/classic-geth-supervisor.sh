@@ -219,7 +219,7 @@ fn_analysis_latest_etherbase_variation(){
     return $a_lev
 }
 
-output="Last block: $(tail -n1 $F_blockchain_write_block | cut -d' ' -f6-)"
+output="Last block analyzed: $(tail -n1 $F_blockchain_write_block | cut -d' ' -f6-)"
 
 alert_n=0
 output=$(line_append_each "$output" "$(cat <<EOL
