@@ -246,7 +246,7 @@ output=$(line_append_each "$output" "$(cat <<EOL
 # Etherbase
 
   > 'Etherbase' analysis uses heuristics around relative etherbase share
-  > distribution and variability to flag anamolous or risky patterns.
+  > distribution and variability to flag anomalous or risky patterns.
 
 EOL
 )")
