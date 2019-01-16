@@ -48,7 +48,7 @@ last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
 
   Overview/reorgs:
 
-    'summ last 5000 blocks' 'sum last 100 blocks'
+    'sum last 5000 blocks' 'sum last 100 blocks'
     67 3
 
 
