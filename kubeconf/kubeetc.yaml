@@ -1,0 +1,67 @@
+# configuration for the bootnode that makes the cluster nodes aware of each other - for that make sure bootnode has same genesis block
+bootnode:
+  nodekeyhex: 3bed8e0fa771475049cddac0fcc20a6cf1005e271e2b12ef339f213218b2dbdb
+  # verbosity of the bootnode [1..9]
+  verbosity: 9
+  # assign an rpc/ipc port
+  geth:
+    NodeP2P_ListenAddr: 30301
+    NodeP2P_DiscoveryAddr: 30303
+    Node_DataDir: /etc/testnet/bootnode
+# here you can add as many nodes as you like, name and configure them
+nodes:
+- miner:
+    # this config values will end up in the k8s manifest directly
+    k8s:
+      # open a port on each node (optional)
+      nodePort_rpc: 30001
+      nodePort_ipc: 30002
+      replicas: 1
+    # this config values will alter the geth config toml file which will end up as a ConfigMap in the k8s manifest
+    geth:
+      # address where the mining rewards will go to (optional)
+      Eth_Etherbase: "0x023e291a99d21c944a871adcc44561a58f99bdbc"
+      # threads (optional)
+      Eth_MinerThreads: 1
+      Node_UserIdent: miner
+      Node_DataDir: /etc/testnet/miner
+      Node_HTTPPort: 8545
+      Node_WSPort: 8546
+      NodeP2P_ListenAddr: 30301
+      NodeP2P_DiscoveryAddr: 30303
+      # experimental built in dashboard (optional) only works on > v1.7.3
+      #Dashboard_Port: 8080
+      #Dashboard_Refresh: 3000000000
+# keep adding nodes
+# - member:
+# ...
+monitor:
+  name: monitor
+  # verbosity can be within [0..3]
+  verbosity: 0
+  k8s:
+    nodePort: 30007
+# create a private key and add it to the keystore folder
+# ... or just use the example one for testing
+keystore:
+  name: UTC--2017-04-06T08-30-06.659191254Z--023e291a99d21c944a871adcc44561a58f99bdbc
+  # true: upload secret first via 'kubectl create secret generic geth-key --from-file /path/to/keyfile'
+  # false: use the key in keystore folder
+  secret: false
+# generic geth related options
+geth:
+  # you can find suitable tags in https://hub.docker.com/r/ethereum/client-go/tags/
+  # due to some config file changes in geth it needs to be > 1.8.0
+  version: stable
+  network:
+    # network id (1: mainnet, 3: ropsten, 4: rinkeby ... )
+    id: 1101
+    # public (true|false) is it a public network?
+    public: false
+  # hex value of initial difficulty defined in the genesis block
+  difficulty: "0x400"
+  # as it is a private cluster, provide a CIDR of the cluster's network
+  # to prevent other nodes connecting from the outside
+  NodeP2P_Netrestrict: "172.16.0.0/12"
+  # general verbosity of geth [1..5]
+  verbosity: 3
