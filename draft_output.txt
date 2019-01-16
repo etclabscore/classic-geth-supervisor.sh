@@ -9,19 +9,13 @@ last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
   > distribution and variability to flag anamolous or risky patterns.
 
   Analysis/etherbase share variation: NOTOK
-  - FLOOR_yellow=5
-  - FLOOR_orange=8
-  - FLOOR_red=10
-  * (1) etherbase share increased significantly lately: 0x1c0fa194a9d3b44313dcd849f3c6be6ad270a0a4 [+8%]
-  Analysis/etherbase share total: OK
-  - FLOOR_yellow=40
-  - FLOOR_orange=45
-  - FLOOR_red=50
-  Analysis/etherbase diversity: OK
-  - FLOOR_latest_red=6
-  - CEILING_latest_orange=25
+  * (1) increased significantly lately: 0x1c0fa194a9d3b44313dcd849f3c6be6ad270a0a4 [+8%]
 
-    Overview/etherbase:
+  Analysis/etherbase share total: OK
+
+  Analysis/etherbase diversity: OK
+
+  Overview/etherbase:
 
     'address' 'percent share @ last 5000 blocks' 'num blocks @ last 5000 blocks' 'percent share last 100 blocks' 'delta share @ all v. last 100 blocks'
     0xdf7d7e053933b5cc24372f878c90e62dadad5d42 38% 1870 34% -4 
@@ -52,8 +46,10 @@ last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
 
   Analysis/reorgs: OK
 
+  Overview/reorgs:
+
     'summ last 5000 blocks' 'sum last 100 blocks'
-    67 
+    67 3
 
 
 # Blocktime delta
@@ -61,8 +57,11 @@ last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
   > 'Blocktime delta' uses block time deltas to detect so-called "selfish mining." 
   > A total hashrate share of greater than 25% is necessary for a miner to have the potential
   > for this behavior.
+  > This analysis is severly limited because it relies exclusively on the etherbase field.
 
   Analysis/etherbase selfish indicators: OK
+
+  Overview/etherbase blocktime delta:
 
     last 5000 blocks aggregate                                   1/72/10/14
     0xdf7d7e053933b5cc24372f878c90e62dadad5d42 38% 1870 34% -4 = 1/56/10/15 
