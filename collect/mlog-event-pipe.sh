@@ -2,7 +2,17 @@
 
 use=$(cat <<EOF
 Use:
-	tail -F geth.log | thisscript.sh
+
+	$ tail -F geth.log | thisscript.sh [analyzerscript.sh] [alertingscript.sh]
+
+      If an 'analyzerscript.sh' is provided, it will be run after each new interesting log line.
+      If the analyzer script is subsequently passed an 'alertingscript.sh', then the analyzer
+      script will call that script if it yields alert-worthy results.
+
+      Since the analyzer script uses a static data store that's fed by this script, it doesn't get
+      any arguments.
+
+      The alerting script will be passed two arguments, where 1=[red|orange|yellow] 2=[body]
 
 EOF
 )
@@ -11,9 +21,19 @@ if [[ $1 == *-h || $1 == *help ]]; then
 	echo "$use" && exit 1
 fi
 
+analyzerscript="$1"
+if [[ -x "$1" ]]; then
+    shift 1;
+else
+    echo "WARNING:"
+    echo "No analyzer script provided."
+    echo
+    echo "That might be ok. You can run analyzer scripts separately, too."
+    echo "Like from a cron, or whatever."
+fi
 
-D_mlog_monitor_data=${1:-"$HOME/.classic-geth-supervisor"}
-data_max_length=${2:-5000}
+D_mlog_monitor_data=${CGS_DATADIR:-"$HOME/.classic-geth-supervisor"}
+data_max_length=${CGS_LINEMAX:-5000}
 
 mkdir -p "$D_mlog_monitor_data"
 
@@ -48,6 +68,10 @@ while read t line; do
 
 		truncate_to_file_max "$f"
 
+    if [[ -x "$analyzerscript" ]]; then
+        source "$analyzerscript"
+    fi
+
 	elif grep -q --line-buffered 'BLOCKCHAIN REORG BLOCKS' <<< "$line"; then
 		# #### BLOCKCHAIN REORG BLOCKS
 		# Called when a chain split is detected and a subset of blocks are reoganized.
@@ -66,7 +90,11 @@ while read t line; do
 
 		truncate_to_file_max "$f"
 
-	# Add your own here...
+    if [[ -x "$analyzerscript" ]]; then
+        source "$analyzerscript"
+    fi
+
+	# Add your own line parsers here...
 
 	fi
 done

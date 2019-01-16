@@ -1,11 +1,35 @@
 #!/usr/bin/env bash
 
 # Either pass a first arg as the path to a geth logfile containing only grep'd BLOCKCHAIN.WRITE.BLOCK lines, or use my default sandbox file which doesn't exist on your computer.
-F_blockchain_write_block="${1:-"$HOME/.classic-geth-supervisor/blockchain.write.block"}"
+D_datadir=${CGS_DATADIR:-"$HOME/.classic-geth-supervisor"}
+F_blockchain_write_block="$D_datadir/blockchain.write.block"
 
 # Set the margin of 'normal' variation between 'latest' and 'aggregate' etherbase percent share.
 # In percent (absolute +/-).
-M_margin_aggregate_diff=${2:-5}
+M_margin_aggregate_diff=5
+while getopts "m:" o
+do
+    case "${o}" in
+        m)
+            M_margin_aggregate_diff=${OPTARG}
+            ;;
+        *)
+            echo "invalid use, use '-m=[1-24]"
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+if [[ $# -lt 1 ]]
+then
+    echo "WARNING:"
+    echo "No alerting script(s) provided. They should be non-flag arguments to this script."
+    echo
+    echo "However, that might be ok, it's up to you. Maybe you're just using this script as a one off,"
+    echo "or handling the stderr output separately."
+fi
+
+declare -a alertscripts=("$@")
 
 wcl=$(cat $F_blockchain_write_block | wc -l)
 wcl_uniq=$(cat $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l)
@@ -35,7 +59,7 @@ rank_uniq_etherbases(){
 	cut -d' ' -f3 |
 	    sort |
       uniq -c |
-      # reading here the output of uniq -c, which is sum line occurences
+      # reading here th output of uniq -c, which is sum line occurences
 	    while read n addr;  do
 		      echo $(printf '%02.f ' "$(calc $n/$1)" && printf '%d ' $n && printf '%s\n' "$addr") >> "$f"
 	    done
@@ -56,10 +80,17 @@ do_alert(){
            alertcode="red"
            ;;
    esac
-   >&2 echo "> debug.alerting: lev=$alertcode alert=$msg"
-	 # TODO: set me up
-   # say "ruh roh, $1 $2"
-	 # echo "$2" | mail -s "[etc.$1-alert][etherbase share]" isaac.ardis@gmail.com # et al, hopefully
+   >&2 echo "> stderr.alerting: lev=$alertcode alert=$msg"
+
+   for s in "${alertscripts[@]}"
+   do
+       if [[ -x "$s" ]]
+       then
+           source "$s" "$alertcode" "$msg"
+       else
+           echo "Cannot execute alert script '$s'. Please check permissions."
+       fi
+   done
 }
 
 aggregate=$(cat "$F_blockchain_write_block" | rank_uniq_etherbases $wcl)
@@ -219,8 +250,8 @@ fn_check_latest_etherbase_variation(){
 }
 
 
-echo "last $wcl blocks (eb.uniq=$wcl_uniq)                  #bks  | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
-echo
+>&2 echo "last $wcl blocks (eb.uniq=$wcl_uniq)                  #bks  | last 100 blocks (eb.uniq=$(tail -n100 $F_blockchain_write_block | cut -d' ' -f3 | sort | uniq | wc -l))"
+>&2 echo
 output=""
 while read agg_percent agg_count agg_address _ uncles; do
     l="$agg_address $agg_percent% $(printf '%04d' $agg_count)"
@@ -249,7 +280,7 @@ $am
         fi
     fi
 
-    echo "$l"
+    >&2 echo "$l"
     output+="$l
 "
 done <<< "$aggregate"
@@ -260,5 +291,5 @@ if [[ $alert_lev -ne 0 ]]; then
 ---
 $output"
 else
-    >&2 echo "> debug.alert_lev=$alert_lev"
+    >&2 echo "> stderr.noalert: alert_lev=$alert_lev"
 fi
