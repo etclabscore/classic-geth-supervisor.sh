@@ -55,8 +55,6 @@ prefix_delta(){
 	  fi
 }
 
-s2_="  "
-s4_="    "
 line_append_one(){
     echo "$1"
     shift 1;
