@@ -153,7 +153,7 @@ fn_analysis_etherbase_share_variation(){
 
     # only care about share variation for big miners
     if [[ $addr_at_latest_percent -gt 20 || $addr_at_agg_percent -gt 15 ]]; then
-        if [[ $diff -lt $((-1 * M_margin_aggregate_diff)) ]]; then
+        if [[ $diff -lt $((-1 * M_margin_aggregate_diff * 3 / 2)) ]]; then
 
             a_lev=$(fn_greater_of $a_lev 1)
             a_msg+="decreased significantly lately: $address [$(prefix_delta $diff)%]"
@@ -280,7 +280,7 @@ done <<< "$aggregate"
 
 if [[ ! -z "$analysis_etherbase_share_total_alert_messages" ]]
 then
-    analysis_etherbase_share_total_alert_messages="$(line_append_each "" "  Analysis/etherbase share total: NOTOK" "$analysis_etherbase_share_total_alert_messages")"
+    analysis_etherbase_share_total_alert_messages="$(line_append_each "" "  Analysis/etherbase share total: WARNING" "$analysis_etherbase_share_total_alert_messages")"
 else
     analysis_etherbase_share_total_alert_messages="$(line_append_one "" "  Analysis/etherbase share total: OK" "")"
 fi
@@ -289,7 +289,7 @@ output="$(line_append_one "$output" "$analysis_etherbase_share_total_alert_messa
 
 if [[ ! -z "$analysis_etherbase_share_variation_alert_messages" ]]
 then
-    analysis_etherbase_share_variation_alert_messages="$(line_append_each "" "  Analysis/etherbase share variation: NOTOK" "$analysis_etherbase_share_variation_alert_messages")"
+    analysis_etherbase_share_variation_alert_messages="$(line_append_each "" "  Analysis/etherbase share variation: WARNING" "$analysis_etherbase_share_variation_alert_messages")"
 else
     analysis_etherbase_share_variation_alert_messages="$(line_append_one "" "  Analysis/etherbase share variation: OK" "")"
 fi
@@ -301,7 +301,7 @@ if [[ ! -z "$share_diversity_out" ]]
 then
     alert_n=$((alert_n+1))
     share_diversity_out="  * ($alert_n) $share_diversity_out"
-    analysis_etherbase_diversity_alert_messages="$(line_append_each "" "  Analysis/etherbase diversity: NOTOK" "$share_diversity_out")"
+    analysis_etherbase_diversity_alert_messages="$(line_append_each "" "  Analysis/etherbase diversity: WARNING" "$share_diversity_out")"
 else
     analysis_etherbase_diversity_alert_messages="$(line_append_one "" "  Analysis/etherbase diversity: OK" "")"
 fi
@@ -309,17 +309,17 @@ output="$(line_append_one "$output" "$analysis_etherbase_diversity_alert_message
 
 output="$(line_append_each "$output" "" "  Overview/etherbase:" "" "$analysis_etherbase_overview_header" "$analysis_etherbase_overview_lines")"
 
-
-if [[ $alert_lev -ne 0 ]]; then
-    do_alert $alert_lev "$alert_msg" "
-
-$output"
-else
-    # >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
-    do_alert 0 "no glaring vulnerabilities"
-fi
+do_alert $alert_lev "$output"
 
 
+# if [[ $alert_lev -ne 0 ]]; then
+#     do_alert $alert_lev "$alert_msg" "
+
+# $output"
+# else
+#     # >&2 echo "> stderr.noalert: alert_lev=$alert_lev" 2> /dev/null
+#     do_alert 0 "no glaring vulnerabilities"
+# fi
 
 
 # if [[ ! -z $am && $am != "OK" ]]; then
