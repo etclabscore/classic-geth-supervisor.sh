@@ -221,6 +221,13 @@ fn_analysis_latest_etherbase_variation(){
 
 output="Last block analyzed: $(tail -n1 $F_blockchain_write_block | cut -d' ' -f6-)"
 
+if [[ $wcl -lt 100 ]]
+then
+    output=$(printf '%s\n%s\n%s' "$output" "Only have $wcl blocks; not enough to begin analysis." "Please wait for the collector collect more data points.")
+    do_alert $alert_lev "$output"
+    exit 0
+fi
+
 alert_n=0
 output=$(line_append_each "$output" "$(cat <<EOL
 
