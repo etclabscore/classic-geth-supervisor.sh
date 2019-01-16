@@ -52,12 +52,12 @@ last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
     67 3
 
 
-# Blocktime delta
+# Selfish mining
 
-  > 'Blocktime delta' uses block time deltas to detect so-called "selfish mining." 
-  > A total hashrate share of greater than 25% is necessary for a miner to have the potential
-  > for this behavior.
-  > This analysis is severly limited because it relies exclusively on the etherbase field.
+  > 'Selfish mining' uses block time deltas and uncle rates to detect so-called "selfish mining," 
+  > a possibility for miners with a total hashrate share of greater than 25%.
+  > NOTE: This analysis is limited because it relies exclusively on the etherbase field, 
+  > which can be set arbitrarily and programmatically by a miner.
 
   Analysis/etherbase selfish indicators: OK
 
