@@ -6,7 +6,9 @@ With these limitations in mind, it's clear these tools are best _adjacent_ to, o
 
 ### Quick start
 
-Look here: [the All together example](#all-together-example)
+Look here for a live example: https://etcstatus.live/
+
+Look here for how to run it yourself: [the All together example](#all-together-example)
 
 ### Usage/API overview
 
