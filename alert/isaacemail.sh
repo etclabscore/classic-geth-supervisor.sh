@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 alert_lev="$1"
 alert_msg="$2"
 
@@ -10,4 +9,6 @@ then
     exit 1
 fi
 
-echo "$alert_msg" | email --username "isaacsclassicsupervisor@gmail.com" --from "Isaac's ETC Supervisor <isaacsclassicsupervisor@gmail.com>" --subject "[ETC-supervisor][$alert_lev-alert]" --cc isaacsclassicsupervisor@gmail.com rotblauer@gmail.com
+if [[ $alert_lev -gt 0 ]]; then
+    echo "$alert_msg" | email --username "isaacsclassicsupervisor@gmail.com" --from "Isaac's ETC Supervisor <isaacsclassicsupervisor@gmail.com>" --subject "[ETC-supervisor][$alert_lev-alert]" --cc isaacsclassicsupervisor@gmail.com rotblauer@gmail.com
+fi

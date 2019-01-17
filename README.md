@@ -1,5 +1,3 @@
-:warning: :hammer: WIP: These tools are at a "Proof of Concept" development level.
-
 A rudimentary collection of bash scripts to collect and analyze blockchain client metrics, providing basic alerting mechanisms for anomalous events and situations.
 
 These are intended to exercise bash's ubiquity, providing lightweight and portable alternatives to heavy-duty diagnostic stacks like Elasticsearch's ELK stack. The focus is on their ability to trigger rudimentary alerting systems, like email, based on rule-of-thumb heuristics for anomalous or flagged chain behavior. Their design intends to minimize specialized dependencies and focus on providing simple and generic text-based datasets and analytics.
@@ -8,7 +6,9 @@ With these limitations in mind, it's clear these tools are best _adjacent_ to, o
 
 ### Quick start
 
-Look here: [the All together example](#all-together-example)
+Look here for a live example: https://etcstatus.live/
+
+Look here for how to run it yourself: [the All together example](#all-together-example)
 
 ### Usage/API overview
 
@@ -31,13 +31,13 @@ These scripts are designed to be configurable, so you can add your alerting serv
 
     API:
     ```sh
-    ./analyze/supervise.sh [-m=N] [./alert/robot-computer.sh] [./another-alert-script.sh] [./the-one-that-feeds-my-dog-on-red-alerts.sh] [...]
+    ./analyze/supervise.sh [-m=N] [./alert/echo.sh] [./say.sh] [./the-one-that-feeds-my-dog-on-red-alerts.sh] [...]
     ```
     API in plain english:
 
     + It accepts one flag, `-m`, determining the margin of deviating percent from average that should be considered alert-worthy for etherbase share, increasing, decreasing, or nearing 50%. 
-      The value can be a number between 1-26, by default is 5.
-    + It accepts _n_ arguments, where each is an executable alerting script. See below for the data they're receive and how they'll receive it.
+      The value can be a number between 1-24, by default is 5.
+    + It accepts _n_ arguments, where each is an executable alerting script. See below for the data they'll receive and how they'll receive it.
     + It prints all `echo`s to `stderr`, since it's purpose in life is not to print things to the shell, but to provide given subsequent interfaces with data.
     
     ```sh
@@ -45,7 +45,7 @@ These scripts are designed to be configurable, so you can add your alerting serv
       classic-geth-supervisor.sh/analyze/supervise.sh -m=6
     ```
   
-- [./alert/robot-computer.sh](./alert/robot-computer.sh) is the exemplary alerting tool. 
+- [./alert/echo.sh](./alert/echo.sh) is the exemplary alerting tool. 
 
     API:
     ```sh
@@ -59,7 +59,7 @@ These scripts are designed to be configurable, so you can add your alerting serv
     ```sh
     $ tail -F $HOME/.ethereum-classic/mainnet/mlogs/geth.log | classic-geth-supervisor.sh/collect/mlog-event-pipe.sh \
       classic-geth-supervisor.sh/analyze/supervise.sh -m=6 \
-      classic-geth-supervisor.sh/alert/robot-computer.sh
+      classic-geth-supervisor.sh/alert/echo.sh
     ```
 
 - [./env.sh](./env.sh) use this script to export vars that will override defaults.
@@ -100,3 +100,26 @@ $ tree .classic-geth-supervisor/
 0 directories, 4 files
 ```
 
+### Alert level and message
+
+Alert levels will be one of `red`, `orange`, or `yellow`.
+
+The alert message will look like the following.
+
+```txt
+* etherbase total share exceeds 40% 0xdf7d7e053933b5cc24372f878c90e62dadad5d42 [41%]
+
+---
+0xdf7d7e053933b5cc24372f878c90e62dadad5d42 39% 0178  |  41% +2 [avg blocktime delta = 15]
+0x9eab4b0fc468a7f5d46228bf5a76cb52370d068d 21% 0095  |  19% -2
+0x0073cf1b9230cf3ee8cab1971b8dbef21ea7b595 07% 0030  |  05% -2
+0x004730417cd2b1d19f6be2679906ded4fa8a64e2 06% 0027  |  05% -1
+0x1c0fa194a9d3b44313dcd849f3c6be6ad270a0a4 06% 0026  |  04% -2
+0x00e39b0dde4c80d23cda79a8b6690d9db014490b 03% 0014  |  04% +1
+0xfe0ca4e9d8b83ff2d03ef4f35f0b5f754e81d1fd 03% 0012  |  02% -1
+0xfe96c2235e805ce312cc830a41d3b10f26a69057 01% 0006  |  01% :0
+0xf35074bbd0a9aee46f4ea137971feec024ab704e 01% 0005  |  04% +3
+0xeda79f0735a56510876a497e1c105916666b0199 01% 0005  |  01% :0
+0x2387f8db786d43528ffd3b0bd776e2ba39dd3832 01% 0005  |  02% +1
+0xd3bfd58a31ddeb2fdd2bc212e38c41725bc93ccd 01% 0004  |  02% +1
+```

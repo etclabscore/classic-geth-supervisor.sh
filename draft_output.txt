@@ -1,0 +1,68 @@
+Wed Jan 16 01:13:51 UTC 2019
+
+alert level: yellow
+last block: 7233441 0xb3fa3223f2aaaaefe878aefddde1214b
+
+# Etherbase
+
+  > 'Etherbase' analysis uses heuristics around relative etherbase share
+  > distribution and variability to flag anamolous or risky patterns.
+
+  Analysis/etherbase share variation: NOTOK
+  * (1) increased significantly lately: 0x1c0fa194a9d3b44313dcd849f3c6be6ad270a0a4 [+8%]
+
+  Analysis/etherbase share total: OK
+
+  Analysis/etherbase diversity: OK
+
+  Overview/etherbase:
+
+    'address' 'percent share @ last 5000 blocks' 'num blocks @ last 5000 blocks' 'percent share last 100 blocks' 'delta share @ all v. last 100 blocks'
+    0xdf7d7e053933b5cc24372f878c90e62dadad5d42 38% 1870 34% -4 
+    0x9eab4b0fc468a7f5d46228bf5a76cb52370d068d 22% 1054 26% +4
+    0x1c0fa194a9d3b44313dcd849f3c6be6ad270a0a4 07% 0352 15% +8 (1)
+    0xd4a56d70fb333a40f3e24b7ce8c37a75c4f489eb 04% 0212 03% -1
+    0x0073cf1b9230cf3ee8cab1971b8dbef21ea7b595 03% 0168 03% :0
+    0xc91716199ccde49dc4fafaeb68925127ac80443f 02% 0079 02% :0
+    0xd144e30a0571aaf0d0c050070ac435deba461fab 02% 0121 01% -1
+    0x00e39b0dde4c80d23cda79a8b6690d9db014490b 02% 0108 01% -1
+    0xfe0ca4e9d8b83ff2d03ef4f35f0b5f754e81d1fd 01% 0070 01% :0
+    0xf35074bbd0a9aee46f4ea137971feec024ab704e 01% 0070 02% +1
+    0xd3bfd58a31ddeb2fdd2bc212e38c41725bc93ccd 01% 0043 01% :0
+    0x5253b33c1313a4449bc5304a9c55b4cc2bdf2872 01% 0041 01% :0
+    0xfe96c2235e805ce312cc830a41d3b10f26a69057 01% 0032 02% +1
+    0x50d2eedb5d786de86a6cd0d304ed480e4607652a 01% 0031 01% :0
+    0xeda79f0735a56510876a497e1c105916666b0199 01% 0025 01% :0
+    0x368d1a9e402ea4dfcf1312dff003104689a0c6c7 00% 0003 01% +1
+    0xdb6ae77429d6d6425dcae4e1caa9d6604d24dcfb 00% 0014 01% +1
+    0x0c5466b30b8ead83fe534f96c2f18a308804570d 00% 0013 01% +1
+    0x87cfd09c483fe65352456bb26c784a0e4c4ba389 00% 0011 01% +1
+    0x5928e011c3b8fc8bef32d5b86a19f2a54c5be654 00% 0010 02% +2
+
+# Reorgs
+
+  > 'Reorgs' analysis uses rate and length of chain reorganisations to
+  > flag risky events and circumstances.
+
+  Analysis/reorgs: OK
+
+  Overview/reorgs:
+
+    'sum last 5000 blocks' 'sum last 100 blocks'
+    67 3
+
+
+# Selfish mining
+
+  > 'Selfish mining' uses block time deltas and uncle rates to detect so-called "selfish mining," 
+  > a possibility for miners with a total hashrate share of greater than 25%.
+  > NOTE: This analysis is limited because it relies exclusively on the etherbase field, 
+  > which can be set arbitrarily and programmatically by a miner.
+
+  Analysis/etherbase selfish indicators: OK
+
+  Overview/etherbase blocktime delta:
+
+    last 5000 blocks aggregate                                   1/72/10/14
+    0xdf7d7e053933b5cc24372f878c90e62dadad5d42 38% 1870 34% -4 = 1/56/10/15 
+    
